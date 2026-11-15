@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>等连串 · 连续 k 次要等多久、试 n 次能碰上的可能性有多大</title>
+<meta name="description" content="一件事每次发生的概率是 p，想碰到它连续 k 次：试 n 次有多大可能碰上、平均要等多少次、要几成把握得试多少次。硬币连续正面、骰子连续六点、投篮连中、π 里同一个数字连着出现，都能算，还附 π 前 100 万位的真实对照。">
+<style>
+  :root{--bg:#f3f1ec;--card:#fff;--ink:#1f2328;--ink2:#4d545c;--mut:#878d94;--line:#e1ddd4;--a:#2f6f8f;--b:#d08a2a;--c:#b8452f;--ok:#2f7d55;--sh:0 1px 2px rgba(0,0,0,.05),0 6px 18px rgba(0,0,0,.05)}
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px;margin:0 auto;padding:22px 16px 72px}
+  h1{font-size:30px;line-height:1.25;margin:0 0 6px}
+  .sub{color:var(--ink2);margin:0;font-size:15.5px}
+  .muted{color:var(--mut);font-size:13.5px}
+  .hide{display:none !important}
+  button{font:inherit;cursor:pointer}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}
+  .chip{background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:13.5px;color:var(--ink2)}
+  .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh);padding:16px;margin:14px 0;min-width:0}
+  .card h2{font-size:17px;margin:0 0 10px}
+  .btn{background:var(--ink);border:1px solid var(--ink);color:#fff;border-radius:9px;padding:7px 12px;font-size:14px}
+  .btn.ghost{background:#fff;color:var(--ink)}
+  .bar{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center}
+  .box{border-radius:10px;padding:10px 12px;font-size:14.5px;margin:10px 0;overflow-wrap:anywhere}
+  .box.bad{background:#f8e1dc;color:#6b2416;border:1px solid #f0c7bd}
+  .box.warn{background:#f6f2e1;color:#5a4b14;border:1px solid #e6dcb2}
+  .box ul{margin:4px 0 0;padding-left:20px}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;flex-wrap:wrap}
+  .seg button{background:#fff;border:0;padding:6px 12px;font-size:14px;color:var(--ink2);text-align:left}
+  .seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px 14px;margin-top:10px}
+  .f label{display:block;font-size:13.5px;color:var(--ink2);margin-bottom:3px}
+  .f input{width:100%;font:inherit;font-size:16px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:#fff;min-width:0}
+  .f.bad input,.f.bad .seg{border-color:var(--c);background:#fff6f4}
+  .f small{display:block;color:var(--mut);font-size:12.5px;margin-top:2px}
+  .sentence{font-size:20px;line-height:1.45;font-weight:700;margin:0 0 4px;overflow-wrap:anywhere}
+  .big{font-size:44px;font-weight:800;line-height:1.1;margin:6px 0 2px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+  .kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-top:12px}
+  .kv div{background:#f7f5f0;border-radius:10px;padding:8px 10px;min-width:0}
+  .kv b{display:block;font-size:19px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+  .kv span{font-size:12.5px;color:var(--mut)}
+  .ruler{margin:14px 0 6px}
+  .rl{display:grid;grid-template-columns:96px 1fr 128px;gap:10px;align-items:center;margin:6px 0;font-size:13.5px;color:var(--ink2)}
+  .rt{position:relative;height:14px;background:#efece5;border-radius:7px}
+  .rt b{position:absolute;left:0;top:0;bottom:0;border-radius:7px;background:#b9c0c7}
+  .rt i{position:absolute;top:-4px;bottom:-4px;width:2px;background:var(--a)}
+  .rl.you .rt b{background:var(--a)}.rl.avg .rt b{background:var(--b)}
+  .rl.you{color:var(--a);font-weight:700}
+  .rv{text-align:right;font-variant-numeric:tabular-nums;color:var(--ink);overflow-wrap:anywhere}
+  table{border-collapse:collapse;width:100%;font-size:14.5px}
+  th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  th{font-size:12.5px;color:var(--mut);font-weight:600}
+  td.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  tr.cur td{background:#eef4f7;font-weight:700}
+  .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  #piTable{min-width:640px}
+  #piTable td:first-child,#piTable th{white-space:nowrap}
+  .act{display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin:6px 0;font-size:14.5px}
+  .act:hover{border-color:var(--a)}
+  .act small{display:block;color:var(--mut);font-size:13px}
+  .foot{color:var(--mut);font-size:13px;margin-top:22px}
+  @media (max-width:520px){h1{font-size:25px}.big{font-size:34px}.sentence{font-size:17.5px}.rl{grid-template-columns:78px 1fr 96px;gap:6px;font-size:12.5px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>等连串</h1>
+  <p class="sub">一件事每次发生的概率是 p，想碰到它<b>连续 k 次</b>：试 n 次有多大可能碰上、平均要等多少次、要几成把握得试多少次。</p>
+  <div class="chips" id="presets"></div>
+  <p class="muted" id="presetNote"></p>
+
+  <div class="card" id="inputCard">
+    <h2>这件事 <span class="muted" id="saveTag"></span></h2>
+    <div class="f" id="f_mode">
+      <div class="seg" role="group" aria-label="问法">
+        <button type="button" id="modeOne" data-mode="one">指定那个结果连续 k 次</button>
+        <button type="button" id="modeAny" data-mode="any">随便哪个结果，同一个连续 k 次</button>
+      </div>
+    </div>
+    <div class="grid">
+      <div class="f" id="f_label"><label for="label">叫什么（可空）</label><input id="label" maxlength="40" autocomplete="off"><small>只用来显示，最多 20 个字</small></div>
+      <div class="f" id="f_prob"><label for="prob">每次发生的概率</label><input id="prob" inputmode="decimal" autocomplete="off"><small>可以写 50%、0.5 或 1/6</small></div>
+      <div class="f hide" id="f_m"><label for="m">一共几种等可能的结果</label><input id="m" inputmode="numeric" autocomplete="off"><small>骰子 6、数字 10、硬币 2</small></div>
+      <div class="f" id="f_k"><label for="k">连续几次 k</label><input id="k" inputmode="numeric" autocomplete="off"><small>1 到 1,000,000</small></div>
+      <div class="f" id="f_n"><label for="n">一共试几次 n</label><input id="n" inputmode="numeric" autocomplete="off"><small>1 到 2,000,000</small></div>
+    </div>
+  </div>
+
+  <div class="box bad hide" id="errBox"></div>
+
+  <div id="resCard">
+    <div class="card">
+      <p class="sentence" id="headline"></p>
+      <div class="big" id="bigP"></div>
+      <p class="muted" id="bigNote"></p>
+      <div class="ruler" id="ruler"></div>
+      <p class="muted" id="rulerNote"></p>
+      <div class="kv">
+        <div><span>平均要等</span><b id="kvWait"></b></div>
+        <div><span>五成把握要试</span><b id="kvQ5"></b></div>
+        <div><span>九成把握要试</span><b id="kvQ9"></b></div>
+        <div><span>九十九成把握要试</span><b id="kvQ99"></b></div>
+        <div><span>这 n 次里平均碰到几段</span><b id="kvMu"></b></div>
+      </div>
+    </div>
+    <div class="box warn hide" id="warnBox"></div>
+
+    <div class="card">
+      <h2>最长那一串，大概会有多长</h2>
+      <div class="tw"><table id="longTable"></table></div>
+      <p class="muted">「至少 j 次」= 这 n 次里最长的那一串连着发生至少 j 次。相邻两行一减，就是最长那串正好 j 次的可能性。</p>
+    </div>
+
+    <div class="card">
+      <h2>只改一项会怎样</h2>
+      <div id="acts"></div>
+    </div>
+
+    <div class="card">
+      <h2>拿 π 对一对：前 100 万位里真的出现了什么</h2>
+      <p class="muted" id="piNote"></p>
+      <div class="tw"><table id="piTable"></table></div>
+      <p class="muted" id="piSwipe">窄屏可以左右滑动这张表。</p>
+      <p class="muted">「平均要等」与「碰到的可能性」是把每一位当成 0–9 等可能、互不相关时算的；π 的数字是否真的这样（所谓「正规数」）数学上还没有证明。π 的数字是本页用 Chudnovsky 公式自己算出来再数的，没有从网上抄。</p>
+    </div>
+
+    <div class="card">
+      <h2>导出与备份</h2>
+      <div class="bar">
+        <button type="button" class="btn" id="dlPng">结果卡 PNG</button>
+        <button type="button" class="btn ghost" id="dlCsv">CSV</button>
+        <button type="button" class="btn ghost" id="dlMd">Markdown</button>
+        <button type="button" class="btn ghost" id="dlJson">JSON 备份</button>
+        <button type="button" class="btn ghost" id="impJson">从 JSON 恢复</button>
+        <button type="button" class="btn ghost" id="reset">回到默认</button>
+        <input type="file" id="impFile" accept="application/json,.json" class="hide">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>怎么算的、算不了什么</h2>
+    <ul class="muted" style="margin:0;padding-left:20px">
+      <li>模型只有一条：每次独立、每次概率都是 p。手感、作弊、机器偏差、概率随时间变，都不在模型里。</li>
+      <li>「至少碰到一次」按逐次递推精确算：第一次凑齐落在第 i 次的概率 = 之前没凑齐 × 第 i−k 次没发生 × 之后 k 次都发生。</li>
+      <li>平均要等 = (1 − p<sup>k</sup>) ÷ ((1 − p) · p<sup>k</sup>) 次；「随便哪个结果」的问法换算成「和上一次一样」连续 k−1 次，再加上第 1 次。</li>
+      <li>超过 200 万次的把握次数、可能性极小或极接近 100% 的情况，用生成函数主极点外推，页面会标「约」。</li>
+      <li>默认例子的硬币、骰子、命中率都是虚构的示例。这不是赌博或投注建议：连续输了之后下一次赢的概率并不会变大。</li>
+    </ul>
+  </div>
+  <p class="foot">等连串 · 纯本地计算，不联网、不收集数据。</p>
+</div>
+<script src="./core.js"></script>
+<script src="./ui.js"></script>
+</body>
+</html>
